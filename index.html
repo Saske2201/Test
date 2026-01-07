@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 
+<!-- iOS / PWA -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1.0,
@@ -20,6 +21,7 @@
 <title>Questions</title>
 
 <style>
+/* БАЗА */
 html, body {
     margin: 0;
     width: 100%;
@@ -64,17 +66,23 @@ body::after {
 
 /* ЦЕНТР */
 #container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
 }
 
+/* ВОПРОС */
 #question {
     font-size: 32px;
     min-height: 80px;
-    display: none;
     cursor: pointer;
     user-select: none;
+    display: none;
+    letter-spacing: 1px;
 }
 
 /* 🔴 КНОПКА — ЧИСТЫЙ ТЕКСТ */
@@ -104,34 +112,34 @@ button:focus-visible {
 
 <div id="container">
     <div id="question"></div>
-    <button id="start">Старт</button>
+    <button id="startButton">Старт</button>
 </div>
 
 <script>
 // блокировка iOS-зум-жестов
 document.addEventListener('gesturestart', e => e.preventDefault());
 
-// PWA service worker
+// service worker
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
 }
 
-// контент
+// ВОПРОСЫ
 const questions = [
-    "Кто ты на самом деле?",
-    "Чего ты боишься больше всего?",
-    "Что бы ты изменил в своей жизни?",
-    "Есть ли у тебя секрет?",
-    "Что делает тебя счастливым?",
-    "О чём ты жалеешь?",
-    "Кому ты доверяешь больше всего?"
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7"
 ];
 
-let unused = [...questions];
-let animating = false;
+let unusedQuestions = [...questions];
+let isAnimating = false;
 
-const chars =
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789!@#$%^&*";
+const questionEl = document.getElementById("question");
+const startButton = document.getElementById("startButton");
 
 // СИМВОЛЫ
 const randomChars =
@@ -141,8 +149,8 @@ const randomChars =
     "абвгдеёжзийклмнопрстуфхцчшщъыьэюя" +
     "0123456789!@#$%^&*()_+-=[]{}<>?/";
 
-function randChar() {
-    return chars[Math.floor(Math.random() * chars.length)];
+function randomChar() {
+    return randomChars[Math.floor(Math.random() * randomChars.length)];
 }
 
 // SCRAMBLE
@@ -159,31 +167,38 @@ function scrambleText(finalText, duration = 2000) {
 
     for (let i = indices.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [idx[i], idx[j]] = [idx[j], idx[i]];
+        [indices[i], indices[j]] = [indices[j], indices[i]];
     }
 
     let revealed = 0;
-    const start = Date.now();
+    const startTime = Date.now();
 
-    const timer = setInterval(() => {
-        const p = Math.min((Date.now() - start) / duration, 1);
-        const target = Math.floor(p * idx.length);
+    const interval = setInterval(() => {
+        const progress = Math.min((Date.now() - startTime) / duration, 1);
+        const target = Math.floor(progress * indices.length);
 
         while (revealed < target) {
-            fixed[idx[revealed++]] = true;
+            fixed[indices[revealed]] = true;
+            revealed++;
         }
 
-        let out = "";
-        for (let i = 0; i < len; i++) {
-            out += fixed[i] ? text[i] : (text[i] === " " ? " " : randChar());
+        let output = "";
+        for (let i = 0; i < length; i++) {
+            if (finalText[i] === " ") {
+                output += " ";
+            } else if (fixed[i]) {
+                output += finalText[i];
+            } else {
+                output += randomChar();
+            }
         }
 
-        qEl.textContent = out;
+        questionEl.textContent = output;
 
-        if (p === 1) {
-            clearInterval(timer);
-            qEl.textContent = text;
-            animating = false;
+        if (progress === 1) {
+            clearInterval(interval);
+            questionEl.textContent = finalText;
+            isAnimating = false;
         }
     }, 30);
 }
@@ -197,20 +212,23 @@ function nextQuestion() {
         questionEl.style.cursor = "default";
         return;
     }
-    const i = Math.floor(Math.random() * unused.length);
-    const q = unused.splice(i, 1)[0];
-    scramble(q);
+
+    const index = Math.floor(Math.random() * unusedQuestions.length);
+    const q = unusedQuestions[index];
+    unusedQuestions.splice(index, 1);
+
+    scrambleText(q);
 }
 
-startBtn.onclick = () => {
-    startBtn.style.display = "none";
-    qEl.style.display = "block";
-    next();
-};
+// СОБЫТИЯ
+startButton.addEventListener("click", () => {
+    startButton.style.display = "none";
+    questionEl.style.display = "block";
+    nextQuestion();
+});
 
-qEl.onclick = next;
+questionEl.addEventListener("click", nextQuestion);
 </script>
 
 </body>
 </html>
-
