@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- iOS / PWA -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1.0,
@@ -21,7 +20,6 @@
 <title>Questions</title>
 
 <style>
-/* БАЗА */
 html, body {
     margin: 0;
     width: 100%;
@@ -30,15 +28,13 @@ html, body {
     overflow: hidden;
 }
 
-/* BODY */
 body {
     color: red;
     font-family: Arial, sans-serif;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent; /* ❗ убираем iOS highlight */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* 🟥 STATUS BAR */
+/* STATUS BAR */
 body::before {
     content: "";
     position: fixed;
@@ -47,11 +43,10 @@ body::before {
     right: 0;
     height: env(safe-area-inset-top);
     background: black;
-    z-index: 9999;
     pointer-events: none;
 }
 
-/* 🟥 HOME INDICATOR */
+/* HOME INDICATOR */
 body::after {
     content: "";
     position: fixed;
@@ -60,7 +55,6 @@ body::after {
     bottom: 0;
     height: env(safe-area-inset-bottom);
     background: black;
-    z-index: 9999;
     pointer-events: none;
 }
 
@@ -77,41 +71,32 @@ body::after {
     justify-content: center;
 
     text-align: center;
-
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
 }
 
-
-/* ВОПРОС */
 #question {
     font-size: 32px;
     min-height: 80px;
     cursor: pointer;
     user-select: none;
     display: none;
-    letter-spacing: 1px;
+    margin-bottom: 20px;
 }
 
-/* 🔴 КНОПКА — ЧИСТЫЙ ТЕКСТ */
 button {
     font-size: 24px;
     padding: 20px 50px;
-    background: transparent;     /* ❌ никакой заливки */
+    background: transparent;
     color: red;
-    border: none;                /* ❌ никакой рамки */
-    outline: none;
+    border: none;
     cursor: pointer;
 }
 
-/* ❌ УБИРАЕМ ВСЕ ACTIVE / FOCUS ЭФФЕКТЫ */
 button:active,
-button:focus,
-button:focus-visible {
+button:focus {
     background: transparent;
-    color: red;
     outline: none;
-    box-shadow: none;
 }
 </style>
 </head>
@@ -124,16 +109,11 @@ button:focus-visible {
 </div>
 
 <script>
-// блокировка iOS-зум-жестов
-document.addEventListener('gesturestart', e => e.preventDefault());
-
-// service worker
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-}
+// ⬇⬇⬇ ВОТ ЭТА СТРОКА БЫЛА КРИТИЧЕСКИ НУЖНА
+let isAnimating = false;
 
 const finalQuestion =
-    "Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) — и какой был бы твой ответ?";
+"Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) — и какой был бы твой ответ?";
 
 const questions = [
     "Какой твой самый большой страх?",
@@ -177,38 +157,28 @@ const questions = [
 let unusedQuestions = [...questions];
 let finalQuestionShown = false;
 
-
 const questionEl = document.getElementById("question");
 const startButton = document.getElementById("startButton");
 
-// СИМВОЛЫ
 const randomChars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-    "abcdefghijklmnopqrstuvwxyz" +
-    "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" +
-    "абвгдеёжзийклмнопрстуфхцчшщъыьэюя" +
-    "0123456789!@#$%^&*()_+-=[]{}<>?/";
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789!@#$%^&*()";
 
 function randomChar() {
     return randomChars[Math.floor(Math.random() * randomChars.length)];
 }
 
-// SCRAMBLE
 function scrambleText(finalText, duration = 2000) {
     isAnimating = true;
 
     const length = finalText.length;
     const fixed = Array(length).fill(false);
-
     const indices = [];
+
     for (let i = 0; i < length; i++) {
         if (finalText[i] !== " ") indices.push(i);
     }
 
-    for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
+    indices.sort(() => Math.random() - 0.5);
 
     let revealed = 0;
     const startTime = Date.now();
@@ -224,13 +194,7 @@ function scrambleText(finalText, duration = 2000) {
 
         let output = "";
         for (let i = 0; i < length; i++) {
-            if (finalText[i] === " ") {
-                output += " ";
-            } else if (fixed[i]) {
-                output += finalText[i];
-            } else {
-                output += randomChar();
-            }
+            output += fixed[i] ? finalText[i] : (finalText[i] === " " ? " " : randomChar());
         }
 
         questionEl.textContent = output;
@@ -243,36 +207,25 @@ function scrambleText(finalText, duration = 2000) {
     }, 30);
 }
 
-// СЛЕДУЮЩИЙ ВОПРОС
 function nextQuestion() {
     if (isAnimating) return;
 
-    // если обычные вопросы закончились
     if (unusedQuestions.length === 0) {
-
-        // если финальный вопрос ещё не показывали
         if (!finalQuestionShown) {
             finalQuestionShown = true;
             scrambleText(finalQuestion);
             return;
         }
-
-        // если уже был финальный вопрос
         questionEl.textContent = "Всё! :)";
         questionEl.style.cursor = "default";
         return;
     }
 
-    // обычный случай — случайный вопрос
     const index = Math.floor(Math.random() * unusedQuestions.length);
-    const q = unusedQuestions[index];
-    unusedQuestions.splice(index, 1);
-
+    const q = unusedQuestions.splice(index, 1)[0];
     scrambleText(q);
 }
 
-
-// СОБЫТИЯ
 startButton.addEventListener("click", () => {
     startButton.style.display = "none";
     questionEl.style.display = "block";
@@ -284,6 +237,3 @@ questionEl.addEventListener("click", nextQuestion);
 
 </body>
 </html>
-
-
-
