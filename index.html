@@ -93,7 +93,6 @@ body::after {
 
 <script>
 let isAnimating = false;
-let started = false;
 let stage = "light";
 let finalQuestionShown = false;
       
@@ -188,12 +187,6 @@ function scrambleText(finalText, duration = 2000) {
 function nextQuestion() {
     if (isAnimating) return;
 
-    if (!started) {
-        started = true;
-        nextQuestion();
-        return;
-    }
-
     let pool;
 
     if (stage === "light") {
@@ -228,5 +221,6 @@ questionEl.addEventListener("click", nextQuestion);
 
 </body>
 </html>
+
 
 
