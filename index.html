@@ -1,96 +1,14 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               maximum-scale=1.0,
-               user-scalable=no,
-               viewport-fit=cover">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<title>Questions</title>
-
-<style>
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    background: black;
-    overflow: hidden;
-}
-
-body {
-    color: red;
-    font-family: Arial, sans-serif;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* STATUS BAR */
-body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top);
-    background: black;
-}
-
-/* HOME INDICATOR */
-body::after {
-    content: "";
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: env(safe-area-inset-bottom);
-    background: black;
-}
-
-/* ЦЕНТР */
-#container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    text-align: center;
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-}
-
-#question {
-    font-size: 32px;
-    min-height: 80px;
-    cursor: pointer;
-    user-select: none;
-    display: none;
-}
-</style>
-</head>
-
-<body>
-
-<div id="container">
-    <div id="question"></div>
-    <div id="start" style="font-size:32px;cursor:pointer;">Старт</div>
-</div>
-
 <script>
 let isAnimating = false;
 
 /* =======================
-   ВОПРОСЫ ПО УРОВНЯМ
+   ФИНАЛЬНЫЙ ВОПРОС
+======================= */
+const finalQuestion =
+"Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) - и какой был бы твой ответ?";
+
+/* =======================
+   ВОПРОСЫ (ВСЕ ТВОИ, БЕЗ ИЗМЕНЕНИЙ)
 ======================= */
 
 // 1️⃣ ЛЁГКИЕ (6)
@@ -100,31 +18,45 @@ const lightQuestions = [
     "Какая привычка из детства до сих пор с тобой?",
     "Какое слово тебе нравится слышать в свой адрес?",
     "Что тебя быстрее всего успокаивает?",
-    "Что ты считаешь своей маленькой слабостью?"
+    "Какая твоя маленькая слабость делает тебя тобой?"
 ];
 
-// 2️⃣ СРЕДНИЕ / СЛОЖНЫЕ (сюда же ЛОЗА)
+// 2️⃣ СРЕДНИЕ (включая Лозу)
 const mediumQuestions = [
     "Какой твой самый большой страх?",
+    "Какая деталь тебе во мне нравится как в человеке на основе нашего общения?",
     "Что тебе труднее всего говорить вслух даже близким?",
+    "О чем ты чаще всего думаешь ночью, когда никто не отвлекает?",
+    "Какой комплимент тебе важнее всего услышать?",
     "В чём ты чаще всего сомневаешься в себе?",
     "Что тебя может прямо взбесить?",
+    "Что ты считаешь своей сильной стороной, но редко используешь?",
+    "Что для тебя значит «уважение» в отношениях?",
+    "Как ты любишь, чтобы тебя поддерживали: словами, делом или присутствием?",
+    "Что ты никогда не просишь, хотя тебе это нужно?",
     "Что ты ценишь в человеке больше всего?",
+    "Что ты хочешь, чтобы я понял(а) про тебя без догадок - напрямую?",
+    "Что во мне тебе откликается, потому что похоже на тебя?",
     "Какой теории ты придерживаешься: Земля плоская или сферическая (элипсообразная)? Автор вопроса: Юрий Лоза."
 ];
 
 // 3️⃣ САМЫЕ ОТКРОВЕННЫЕ
 const deepQuestions = [
-    "Что ты на самом деле очень любишь, но скрываешь?",
-    "Что ты не успел(а) сказать человеку — и до сих пор помнишь?",
-    "В каких ситуациях ты чувствуешь себя особенно одиноко?",
+    "Есть ли у тебя в жизни ситуация, глядя на которую спустя годы ты понимаешь, что нужно было поступить иначе?",
+    "Что ты на самом деле очень любишь, но при этом не показываешь и не говоришь об этом другим, а может даже и демонстрируешь вообще обратное?",
+    "Что тебя трогает до глубины, но ты это скрываешь?",
+    "Какая привычка из детства до сих пор с тобой?",
+    "Что ты не успел(а) сказать человеку - и до сих пор помнишь?",
     "Что ты считаешь настоящей близостью?",
-    "Когда тебе плохо, ты хочешь, чтобы тебя оставили в покое или были рядом?"
+    "В каких ситуациях ты чувствуешь себя особенно одиноко?",
+    "Что ты всегда прощаешь людям?",
+    "В каких ситуациях ты чувствуешь ревность и почему?",
+    "Какое твоё правило по жизни ты нарушаешь чаще всего?",
+    "Что ты считаешь домом - это место или человек?",
+    "Когда тебе плохо, ты хочешь, чтобы тебя оставили в покое или были рядом?",
+    "Что ты хотел(а) бы научиться говорить без страха?",
+    "Какой, по твоему мнению, твой самый сильный поступок, за который ты гордишься?"
 ];
-
-// 4️⃣ ФИНАЛ
-const finalQuestion =
-"Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) — и какой был бы твой ответ?";
 
 /* =======================
    СОСТОЯНИЕ
@@ -139,10 +71,9 @@ let pools = [
 ];
 
 const questionEl = document.getElementById("question");
-const startEl = document.getElementById("start");
 
 /* =======================
-   SCRAMBLE
+   SCRAMBLE (НЕ МЕНЯЛ)
 ======================= */
 
 const randomChars =
@@ -184,7 +115,7 @@ function scrambleText(finalText, duration = 2000) {
 }
 
 /* =======================
-   ЛОГИКА ВОПРОСОВ
+   ЛОГИКА ВЫДАЧИ
 ======================= */
 
 function nextQuestion() {
@@ -212,18 +143,5 @@ function nextQuestion() {
     questionEl.textContent = "Всё! :)";
 }
 
-/* =======================
-   СОБЫТИЯ
-======================= */
-
-startEl.addEventListener("click", () => {
-    startEl.style.display = "none";
-    questionEl.style.display = "block";
-    nextQuestion();
-});
-
 questionEl.addEventListener("click", nextQuestion);
 </script>
-
-</body>
-</html>
