@@ -14,9 +14,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Questions">
 
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
-
 <title>Questions</title>
 
 <style>
@@ -43,7 +40,6 @@ body::before {
     right: 0;
     height: env(safe-area-inset-top);
     background: black;
-    pointer-events: none;
 }
 
 /* HOME INDICATOR */
@@ -55,10 +51,9 @@ body::after {
     bottom: 0;
     height: env(safe-area-inset-bottom);
     background: black;
-    pointer-events: none;
 }
 
-/* ЦЕНТР */
+/* ЦЕНТР ЭКРАНА */
 #container {
     position: fixed;
     top: 50%;
@@ -66,7 +61,6 @@ body::after {
     transform: translate(-50%, -50%);
 
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
 
@@ -75,28 +69,18 @@ body::after {
     padding-right: env(safe-area-inset-right);
 }
 
+/* ЕДИНЫЙ ТЕКСТОВЫЙ ЭЛЕМЕНТ */
 #question {
     font-size: 32px;
+    line-height: 1.3;
     min-height: 80px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     cursor: pointer;
     user-select: none;
-    display: none;
-    margin-bottom: 20px;
-}
-
-button {
-    font-size: 24px;
-    padding: 20px 50px;
-    background: transparent;
-    color: red;
-    border: none;
-    cursor: pointer;
-}
-
-button:active,
-button:focus {
-    background: transparent;
-    outline: none;
 }
 </style>
 </head>
@@ -104,14 +88,16 @@ button:focus {
 <body>
 
 <div id="container">
-    <div id="question"></div>
-    <button id="startButton">Старт</button>
+    <div id="question">Старт</div>
 </div>
 
 <script>
+<script>
 let isAnimating = false;
+let started = false;
+let stage = "light";
 let finalQuestionShown = false;
-
+      
 /* ФИНАЛ */
 const finalQuestion =
 "Какой вопрос ты сам(а) хотел(а) бы задать?";
@@ -163,11 +149,7 @@ let deepQuestions = [
     "Какой, по твоему мнению, твой самый сильный поступок, за который ты гордишься?"
 ];
 
-/* ТЕКУЩИЙ ЭТАП */
-let stage = "light";
-
 const questionEl = document.getElementById("question");
-const startButton = document.getElementById("startButton");
 
 const randomChars =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789";
@@ -179,26 +161,18 @@ function randomChar() {
 function scrambleText(finalText, duration = 2000) {
     isAnimating = true;
 
-    const length = finalText.length;
-    const fixed = Array(length).fill(false);
-    const indices = [];
-
-    for (let i = 0; i < length; i++) {
-        if (finalText[i] !== " ") indices.push(i);
-    }
-
+    const fixed = Array(finalText.length).fill(false);
+    const indices = [...Array(finalText.length).keys()].filter(i => finalText[i] !== " ");
     indices.sort(() => Math.random() - 0.5);
 
     let revealed = 0;
-    const startTime = Date.now();
+    const start = Date.now();
 
     const interval = setInterval(() => {
-        const progress = Math.min((Date.now() - startTime) / duration, 1);
+        const progress = Math.min((Date.now() - start) / duration, 1);
         const target = Math.floor(progress * indices.length);
 
-        while (revealed < target) {
-            fixed[indices[revealed++]] = true;
-        }
+        while (revealed < target) fixed[indices[revealed++]] = true;
 
         questionEl.textContent = finalText.split("").map((c, i) =>
             c === " " ? " " : fixed[i] ? c : randomChar()
@@ -214,6 +188,12 @@ function scrambleText(finalText, duration = 2000) {
 
 function nextQuestion() {
     if (isAnimating) return;
+
+    if (!started) {
+        started = true;
+        nextQuestion();
+        return;
+    }
 
     let pool;
 
@@ -236,26 +216,17 @@ function nextQuestion() {
                 return;
             }
             questionEl.textContent = "Всё! :)";
-            questionEl.style.cursor = "default";
             return;
         }
     }
 
-    const index = Math.floor(Math.random() * pool.length);
-    const q = pool.splice(index, 1)[0];
+    const q = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
     scrambleText(q);
 }
-
-startButton.addEventListener("click", () => {
-    startButton.style.display = "none";
-    questionEl.style.display = "block";
-    nextQuestion();
-});
 
 questionEl.addEventListener("click", nextQuestion);
 </script>
 
 </body>
 </html>
-
 
