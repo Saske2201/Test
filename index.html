@@ -121,28 +121,61 @@ function scrambleText(finalText, duration = 2000) {
 function nextQuestion() {
     if (isAnimating) return;
 
-    if (stage <= 2) {
-        if (pools[stage].length === 0) {
-            stage++;
-            nextQuestion();
+    // 1️⃣ ЛЁГКИЕ
+    if (stage === 0) {
+        if (pools[0].length > 0) {
+            const q = pools[0].splice(
+                Math.floor(Math.random() * pools[0].length), 1
+            )[0];
+            scrambleText(q);
             return;
+        } else {
+            stage = 1;
+            return; // ⛔ ждём следующего клика
         }
-
-        const pool = pools[stage];
-        const q = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
-        scrambleText(q);
-        return;
     }
 
+    // 2️⃣ СРЕДНИЕ
+    if (stage === 1) {
+        if (pools[1].length > 0) {
+            const q = pools[1].splice(
+                Math.floor(Math.random() * pools[1].length), 1
+            )[0];
+            scrambleText(q);
+            return;
+        } else {
+            stage = 2;
+            return;
+        }
+    }
+
+    // 3️⃣ СЛОЖНЫЕ
+    if (stage === 2) {
+        if (pools[2].length > 0) {
+            const q = pools[2].splice(
+                Math.floor(Math.random() * pools[2].length), 1
+            )[0];
+            scrambleText(q);
+            return;
+        } else {
+            stage = 3;
+            return;
+        }
+    }
+
+    // 4️⃣ ФИНАЛЬНЫЙ
     if (stage === 3) {
-        stage++;
+        stage = 4;
         scrambleText(finalQuestion);
         return;
     }
 
+    // 5️⃣ КОНЕЦ
     questionEl.textContent = "Всё! :)";
 }
 
+
 questionEl.addEventListener("click", nextQuestion);
 </script>
+
 
