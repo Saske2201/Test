@@ -12,6 +12,10 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Questions">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
 
 <title>Questions</title>
 
@@ -39,6 +43,7 @@ body::before {
     right: 0;
     height: env(safe-area-inset-top);
     background: black;
+    pointer-events: none;
 }
 
 /* HOME INDICATOR */
@@ -50,6 +55,7 @@ body::after {
     bottom: 0;
     height: env(safe-area-inset-bottom);
     background: black;
+    pointer-events: none;
 }
 
 /* ЦЕНТР */
@@ -75,6 +81,22 @@ body::after {
     cursor: pointer;
     user-select: none;
     display: none;
+    margin-bottom: 20px;
+}
+
+button {
+    font-size: 24px;
+    padding: 20px 50px;
+    background: transparent;
+    color: red;
+    border: none;
+    cursor: pointer;
+}
+
+button:active,
+button:focus {
+    background: transparent;
+    outline: none;
 }
 </style>
 </head>
@@ -83,23 +105,24 @@ body::after {
 
 <div id="container">
     <div id="question"></div>
-    <div id="start" style="font-size:32px;cursor:pointer;">Старт</div>
+    <button id="startButton">Старт</button>
 </div>
 
 <script>
+/* =======================
+   СОСТОЯНИЕ
+======================= */
 let isAnimating = false;
+let stage = 0; // 0 light → 1 medium → 2 deep → 3 final → 4 end
+
+const questionEl = document.getElementById("question");
+const startButton = document.getElementById("startButton");
 
 /* =======================
-   ФИНАЛЬНЫЙ ВОПРОС
-======================= */
-const finalQuestion =
-"Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) - и какой был бы твой ответ?";
-
-/* =======================
-   ВОПРОСЫ (ВСЕ ТВОИ, БЕЗ ИЗМЕНЕНИЙ)
+   ВОПРОСЫ
 ======================= */
 
-// 1️⃣ ЛЁГКИЕ (6)
+// ЛЁГКИЕ
 const lightQuestions = [
     "Какой твой любимый цвет?",
     "С каким животным я у тебя ассоциируюсь?",
@@ -109,7 +132,7 @@ const lightQuestions = [
     "Какая твоя маленькая слабость делает тебя тобой?"
 ];
 
-// 2️⃣ СРЕДНИЕ (включая Лозу)
+// СРЕДНИЕ (включая Лозу)
 const mediumQuestions = [
     "Какой твой самый большой страх?",
     "Какая деталь тебе во мне нравится как в человеке на основе нашего общения?",
@@ -128,7 +151,7 @@ const mediumQuestions = [
     "Какой теории ты придерживаешься: Земля плоская или сферическая (элипсообразная)? Автор вопроса: Юрий Лоза."
 ];
 
-// 3️⃣ САМЫЕ ОТКРОВЕННЫЕ
+// ГЛУБОКИЕ
 const deepQuestions = [
     "Есть ли у тебя в жизни ситуация, глядя на которую спустя годы ты понимаешь, что нужно было поступить иначе?",
     "Что ты на самом деле очень любишь, но демонстрируешь вообще обратное?",
@@ -145,11 +168,9 @@ const deepQuestions = [
     "Какой, по твоему мнению, твой самый сильный поступок, за который ты гордишься?"
 ];
 
-/* =======================
-   СОСТОЯНИЕ
-======================= */
-
-let stage = 0; // 0 — light, 1 — medium, 2 — deep, 3 — final, 4 — end
+// ФИНАЛ
+const finalQuestion =
+"Какой вопрос ты сам(а) хотел(а) бы, чтобы я тебе задал(а) - и какой был бы твой ответ?";
 
 let pools = [
     [...lightQuestions],
@@ -157,14 +178,12 @@ let pools = [
     [...deepQuestions]
 ];
 
-const questionEl = document.getElementById("question");
-
 /* =======================
-   SCRAMBLE (НЕ МЕНЯЛ)
+   SCRAMBLE
 ======================= */
 
 const randomChars =
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789!@#$%^&*()";
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789";
 
 function randomChar() {
     return randomChars[Math.floor(Math.random() * randomChars.length)];
@@ -184,9 +203,7 @@ function scrambleText(finalText, duration = 2000) {
         const progress = Math.min((Date.now() - start) / duration, 1);
         const target = Math.floor(progress * indices.length);
 
-        while (revealed < target) {
-            fixed[indices[revealed++]] = true;
-        }
+        while (revealed < target) fixed[indices[revealed++]] = true;
 
         questionEl.textContent = finalText
             .split("")
@@ -202,69 +219,41 @@ function scrambleText(finalText, duration = 2000) {
 }
 
 /* =======================
-   ЛОГИКА ВЫДАЧИ
+   ЛОГИКА
 ======================= */
 
 function nextQuestion() {
     if (isAnimating) return;
 
-    // 1️⃣ ЛЁГКИЕ
-    if (stage === 0) {
-        if (pools[0].length > 0) {
-            const q = pools[0].splice(
-                Math.floor(Math.random() * pools[0].length), 1
+    if (stage <= 2) {
+        if (pools[stage].length > 0) {
+            const q = pools[stage].splice(
+                Math.floor(Math.random() * pools[stage].length), 1
             )[0];
             scrambleText(q);
-            return;
         } else {
-            stage = 1;
-            return; // ⛔ ждём следующего клика
+            stage++;
         }
+        return;
     }
 
-    // 2️⃣ СРЕДНИЕ
-    if (stage === 1) {
-        if (pools[1].length > 0) {
-            const q = pools[1].splice(
-                Math.floor(Math.random() * pools[1].length), 1
-            )[0];
-            scrambleText(q);
-            return;
-        } else {
-            stage = 2;
-            return;
-        }
-    }
-
-    // 3️⃣ СЛОЖНЫЕ
-    if (stage === 2) {
-        if (pools[2].length > 0) {
-            const q = pools[2].splice(
-                Math.floor(Math.random() * pools[2].length), 1
-            )[0];
-            scrambleText(q);
-            return;
-        } else {
-            stage = 3;
-            return;
-        }
-    }
-
-    // 4️⃣ ФИНАЛЬНЫЙ
     if (stage === 3) {
-        stage = 4;
+        stage++;
         scrambleText(finalQuestion);
         return;
     }
 
-    // 5️⃣ КОНЕЦ
     questionEl.textContent = "Всё! :)";
 }
 
+startButton.addEventListener("click", () => {
+    startButton.style.display = "none";
+    questionEl.style.display = "block";
+    nextQuestion();
+});
 
 questionEl.addEventListener("click", nextQuestion);
 </script>
 
-
-
-
+</body>
+</html>
